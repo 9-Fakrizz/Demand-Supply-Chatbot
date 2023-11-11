@@ -1,0 +1,81 @@
+const https = require("https");
+const express = require("express");
+const app = express();
+let stocked = [];
+let demand = [];
+const PORT = process.env.PORT || 3000;
+const TOKEN = process.env.LINE_ACCESS_TOKEN;
+const line = require('@line/bot-sdk');
+const client = new line.Client({
+  channelAccessToken: TOKEN
+});
+
+
+app.use(express.json());
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
+app.get("/", (req, res) => {
+  res.sendStatus(200);
+});
+
+
+app.post("/webhook", async function(req, res) {
+  res.send("HTTP POST request sent to the webhook URL!");
+
+  if (req.body && req.body.events[0].type === "message") {
+    const userId = req.body.events[0].source.userId;
+    const profile = await client.getProfile(userId);
+    const displayName = profile.displayName;
+    console.log("Sender's Display Name:", displayName);
+
+    if (req.body.events[0].message.text.includes("jbupdate")) {
+      stocked = req.body.events[0].message.text.replace("jbupdate", "").trim();
+      stocked = stocked.split('\n').map(line => line.trim());
+    } else {
+      stocked = [];
+    }
+  }
+  console.log(stocked);
+  const dataString = JSON.stringify({
+    replyToken: req.body.events[0].replyToken,
+    messages: [
+      {
+        type: "text",
+        text: displayName + stocked,
+      },
+    ],
+  });
+
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + TOKEN,
+  };
+
+  const webhookOptions = {
+    hostname: "api.line.me",
+    path: "/v2/bot/message/reply",
+    method: "POST",
+    headers: headers,
+  };
+
+  const request = https.request(webhookOptions);
+
+  request.on("error", (err) => {
+    console.error(err);
+  });
+
+  if (displayName.includes("Fak")) {
+    request.write(dataString);
+  }
+  request.end();
+}
+);
+
+app.listen(PORT, () => {
+  console.log(`Example app listening at http://localhost:${PORT}`);
+});
