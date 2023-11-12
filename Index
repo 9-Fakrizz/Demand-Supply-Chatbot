@@ -36,45 +36,49 @@ app.post("/webhook", async function(req, res) {
       stocked = req.body.events[0].message.text.replace("jbupdate", "").trim();
       stocked = stocked.split('\n').map(line => line.trim());
     } else {
-      stocked = [];
+      demand = req.body.events[0].message.text;
+      demand = demand.split('\n').map(line => line.split(' ')[0].trim());
+
     }
+    //demand = stocked.filter(item => demand.includes(item));
+    console.log(stocked);
+    //console.log("demand :" + demand);
+
+    const dataString = JSON.stringify({
+      replyToken: req.body.events[0].replyToken,
+      messages: [
+        {
+          type: "text",
+          text: "" + demand,
+        },
+      ],
+    });
+
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + TOKEN,
+    };
+
+    const webhookOptions = {
+      hostname: "api.line.me",
+      path: "/v2/bot/message/reply",
+      method: "POST",
+      headers: headers,
+    };
+
+    const request = https.request(webhookOptions);
+
+    request.on("error", (err) => {
+      console.error(err);
+    });
+
+    if (displayName.includes("Fak")) {
+      request.write(dataString);
+    }
+    request.end();
   }
-  console.log(stocked);
-  const dataString = JSON.stringify({
-    replyToken: req.body.events[0].replyToken,
-    messages: [
-      {
-        type: "text",
-        text: displayName + stocked,
-      },
-    ],
-  });
-
-
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: "Bearer " + TOKEN,
-  };
-
-  const webhookOptions = {
-    hostname: "api.line.me",
-    path: "/v2/bot/message/reply",
-    method: "POST",
-    headers: headers,
-  };
-
-  const request = https.request(webhookOptions);
-
-  request.on("error", (err) => {
-    console.error(err);
-  });
-
-  if (displayName.includes("Fak")) {
-    request.write(dataString);
-  }
-  request.end();
-}
-);
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening at http://localhost:${PORT}`);
