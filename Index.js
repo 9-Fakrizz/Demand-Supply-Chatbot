@@ -25,11 +25,12 @@ app.post("/webhook", async function(req, res) {
   try {
 
     const userId = req.body.events[0].source.userId;
+    let displayName ='no';
     
     if(req.body.events[0].source.groupId){
       const groupId = req.body.events[0].source.groupId;
       const profile = await client.getGroupMemberProfile(groupId, userId);;
-      const displayName = profile.displayName;
+     displayName = profile.displayName;
     }else{displayName = "no"}
     
     const profile2 = await client.getProfile(userId);
@@ -57,8 +58,13 @@ app.post("/webhook", async function(req, res) {
         console.log("\ndemand :\n" + demand)
         console.log("\nresult :\n" + result);
       }
-
-      let messages = result.map(line => ({ type: "text", text: line }));
+      let messages = [];
+      for (let i = 0; i < result.length; i++) {
+      messages.push({
+        type: "text",
+        text: ""+ result[i],
+      });
+      }
 
       let data = {
         replyToken: req.body.events[0].replyToken,
